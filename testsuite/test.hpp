@@ -321,6 +321,26 @@ inline void tcp_set_nonblocking(SOCKET_T& sockfd)
 }
 
 
+#ifdef NON_BLOCKING
+/* return 0 if sockfd is ready to read, otherwise -1 */
+inline int tcp_select(SOCKET_T sockfd)
+{
+    fd_set recvfds;
+    SOCKET_T fdsp1 = sockfd + 1;
+
+    FD_ZERO(&recvfds);
+    FD_SET(sockfd, &recvfds);
+
+    int result = select(fdsp1, &recvfds, NULL, NULL, NULL);
+    if (result > 0) {
+        if (FD_ISSET(sockfd, &recvfds))
+            return 0;
+    }
+    return -1;
+}
+#endif
+
+
 inline void tcp_socket(SOCKET_T& sockfd, SOCKADDR_IN_T& addr)
 {
     sockfd = socket(AF_INET_V, SOCK_STREAM, 0);

@@ -29,3 +29,4 @@ taocrypt/test/test
 taocrypt/benchmark/benchmark
 stamp-h1
 output
+server_ready

@@ -27,13 +27,13 @@ void ServerError(SSL_CTX* ctx, SSL* ssl, SOCKET_T& sockfd, const char* msg)
                 printf("... server would read block\n");
             else
                 printf("... server would write block\n");
-            #ifdef _WIN32
-                Sleep(1000);
-            #else
-                sleep(1);
-            #endif
-            ret = SSL_accept(ssl);
-            err = SSL_get_error(ssl, 0);
+            ret = tcp_select(clientfd);
+            if (ret == 0) {
+                ret = SSL_accept(ssl);
+                err = SSL_get_error(ssl, 0);
+            } else {
+                break;
+            }
         }
         if (ret != SSL_SUCCESS)
             ServerError(ctx, ssl, clientfd, "SSL_accept failed");

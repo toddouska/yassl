@@ -29,13 +29,13 @@ void ClientError(SSL_CTX* ctx, SSL* ssl, SOCKET_T& sockfd, const char* msg)
                 printf("... client would read block\n");
             else
                 printf("... client would write block\n");
-            #ifdef _WIN32
-                Sleep(1000);
-            #else
-                sleep(1);
-            #endif
-            ret = SSL_connect(ssl);
-            err = SSL_get_error(ssl, 0);
+            ret = tcp_select(sockfd);
+            if (ret == 0) {
+                ret = SSL_connect(ssl);
+                err = SSL_get_error(ssl, 0);
+            } else {
+                break;
+            }
         }
         if (ret != SSL_SUCCESS)
             ClientError(ctx, ssl, sockfd, "SSL_connect failed");
