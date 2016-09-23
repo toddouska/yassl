@@ -1247,7 +1247,7 @@ int dsa_test()
 
     signer.Sign(digest, signature, rng);
 
-    byte encoded[sizeof(signature) + 6];
+    byte encoded[sizeof(signature) + 8];
     byte decoded[40];
 
     word32 encSz = EncodeDSA_Signature(signer.GetR(), signer.GetS(), encoded);

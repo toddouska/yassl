@@ -155,7 +155,8 @@ void DH_Server::build(SSL& ssl)
         }
         auth.reset(NEW_YS DSS(cert.get_privateKey(),
                    cert.get_privateKeyLength(), false));
-        sigSz += DSS_ENCODED_EXTRA;
+        sigSz += DSS_ENCODED_EXTRA+2;  // 2 potential leading bit zero bytes
+                                       // TODO: add this ECODED_EXTRA?
     }
     
     sigSz += auth->get_signatureLength();
@@ -214,9 +215,9 @@ void DH_Server::build(SSL& ssl)
     else {
         auth->sign(signature_, &hash[MD5_LEN], SHA_LEN,
                    ssl.getCrypto().get_random());
-        byte encoded[DSS_SIG_SZ + DSS_ENCODED_EXTRA];
-        TaoCrypt::EncodeDSA_Signature(signature_, encoded);
-        memcpy(signature_, encoded, sizeof(encoded));
+        byte encoded[DSS_SIG_SZ + DSS_ENCODED_EXTRA + 2];
+        sigSz = TaoCrypt::EncodeDSA_Signature(signature_, encoded);
+        memcpy(signature_, encoded, sigSz);
     }
 
     c16toa(sigSz, len);
@@ -224,7 +225,7 @@ void DH_Server::build(SSL& ssl)
     tmp.write(signature_, sigSz);
 
     // key message
-    keyMessage_ = NEW_YS opaque[length_];
+    keyMessage_ = NEW_YS opaque[length_ = tmp.get_size()];
     memcpy(keyMessage_, tmp.get_buffer(), tmp.get_size());
 }
 
@@ -2185,6 +2186,7 @@ void CertificateVerify::Build(SSL& ssl)
         dss.sign(sig.get() + VERIFY_HEADER, hashes_.sha_, SHA_LEN,
                  ssl.getCrypto().get_random());
 
+        // TODO: fix potential 2 extra bytes for leading bit zero padding
         byte encoded[DSS_SIG_SZ + DSS_ENCODED_EXTRA];
         TaoCrypt::EncodeDSA_Signature(sig.get() + VERIFY_HEADER, encoded);
         memcpy(sig.get() + VERIFY_HEADER, encoded, sizeof(encoded));

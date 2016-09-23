@@ -1172,29 +1172,44 @@ word32 EncodeDSA_Signature(const Integer& r, const Integer& s, byte* output)
     word32 rSz = r.ByteCount();
     word32 sSz = s.ByteCount();
 
+    word32 rLeadingBit = 0;
+    if (r.BitCount() == 160) {
+        rLeadingBit = 1;
+    }
+
+    word32 sLeadingBit = 0;
+    if (s.BitCount() == 160) {
+        sLeadingBit = 1;
+    }
+
     byte rLen[MAX_LENGTH_SZ + 1];
     byte sLen[MAX_LENGTH_SZ + 1];
 
     rLen[0] = INTEGER;
     sLen[0] = INTEGER;
 
-    word32 rLenSz = SetLength(rSz, &rLen[1]) + 1;
-    word32 sLenSz = SetLength(sSz, &sLen[1]) + 1;
+    word32 rLenSz = SetLength(rSz+rLeadingBit, &rLen[1]) + 1;
+    word32 sLenSz = SetLength(sSz+sLeadingBit, &sLen[1]) + 1;
 
     byte seqArray[MAX_SEQ_SZ];
 
-    word32 seqSz = SetSequence(rLenSz + rSz + sLenSz + sSz, seqArray);
-    
+    word32 seqSz = SetSequence(rLenSz + rSz +rLeadingBit +
+                               sLenSz + sSz + sLeadingBit, seqArray);
     // seq
     memcpy(output, seqArray, seqSz);
     // r
     memcpy(output + seqSz, rLen, rLenSz);
-    r.Encode(output + seqSz + rLenSz, rSz);
+    if (rLeadingBit)
+        output[seqSz + rLenSz] = 0;
+    r.Encode(output + seqSz + rLenSz + rLeadingBit, rSz);
     // s
-    memcpy(output + seqSz + rLenSz + rSz, sLen, sLenSz);
-    s.Encode(output + seqSz + rLenSz + rSz + sLenSz, sSz);
+    memcpy(output + seqSz + rLenSz + rLeadingBit + rSz, sLen, sLenSz);
+    if (sLeadingBit)
+        output[seqSz + rLenSz + rLeadingBit + rSz + sLenSz] = 0;
+    s.Encode(output + seqSz + rLenSz + rLeadingBit + rSz +
+             sLenSz + sLeadingBit, sSz);
 
-    return seqSz + rLenSz + rSz + sLenSz + sSz;
+    return seqSz + rLenSz + rLeadingBit + rSz + sLenSz + sLeadingBit + sSz;
 }
 
 
